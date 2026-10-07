@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Disk Scheduling Simulator</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ font-family:Inter,Arial,sans-serif;
+ background:#f5f7fc;
+ color:#202938;
+}
+
+.container{
+ max-width:1250px;
+ margin:auto;
+ padding:30px 24px;
+}
+
+/* HEADER */
+.header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:24px;
+}
+
+.brand{
+ display:flex;
+ gap:14px;
+ align-items:center;
+}
+
+.logo{
+ width:48px;
+ height:48px;
+ display:grid;
+ place-items:center;
+ border-radius:12px;
+ background:linear-gradient(135deg,#5267e8,#7b5ce1);
+ color:white;
+ font-size:22px;
+ box-shadow:0 7px 18px #5267e833;
+}
+
+h1{
+ margin:0;
+ font-size:30px;
+ letter-spacing:-.7px;
+ color:#1d2b50;
+}
+
+.subtitle{
+ margin:5px 0 0;
+ color:#718096;
+ font-size:13px;
+}
+
+.status{
+ padding:8px 13px;
+ border-radius:20px;
+ background:#e9f9f0;
+ color:#19945a;
+ font-size:12px;
+ font-weight:bold;
+ border:1px solid #c8efd9;
+}
+
+/* LAYOUT */
+.layout{
+ display:grid;
+ grid-template-columns:315px 1fr;
+ gap:20px;
+}
+
+/* CARDS */
+.card{
+ background:white;
+ border:1px solid #e2e7f0;
+ border-radius:14px;
+ box-shadow:0 5px 20px #243b6b0a;
+}
+
+.card-title{
+ padding:18px 20px;
+ border-bottom:1px solid #edf0f5;
+}
+
+.card-title h3{
+ margin:0;
+ font-size:15px;
+ color:#263653;
+}
+
+.card-title p{
+ margin:4px 0 0;
+ color:#8994a7;
+ font-size:11px;
+}
+
+.card-body{
+ padding:20px;
+}
+
+/* CONTROLS */
+label{
+ display:block;
+ margin:13px 0 6px;
+ color:#536078;
+ font-size:11px;
+ font-weight:700;
+ text-transform:uppercase;
+ letter-spacing:.4px;
+}
+
+input,select{
+ width:100%;
+ padding:10px 11px;
+ border:1px solid #d6dce7;
+ border-radius:8px;
+ background:#fafbfe;
+ color:#27344c;
+ font-size:13px;
+ outline:none;
+ transition:.2s;
+}
+
+input:focus,select:focus{
+ border-color:#6577e8;
+ box-shadow:0 0 0 3px #6577e815;
+}
+
+.algos{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:6px;
+}
+
+.algos button{
+ padding:9px 5px;
+ border:1px solid #dce2ec;
+ background:#f8f9fc;
+ color:#56627a;
+ border-radius:7px;
+ font-size:11px;
+ font-weight:bold;
+ cursor:pointer;
+ transition:.2s;
+}
+
+.algos button:hover{
+ border-color:#8998e8;
+ color:#4255c8;
+}
+
+.algos .active{
+ background:#5368e8;
+ color:white;
+ border-color:#5368e8;
+ box-shadow:0 4px 10px #5368e833;
+}
+
+.check{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ margin:15px 0;
+ color:#68758a;
+ font-size:11px;
+}
+
+.check input{
+ width:auto;
+ accent-color:#5368e8;
+}
+
+.run{
+ width:100%;
+ padding:12px;
+ border:0;
+ border-radius:8px;
+ background:linear-gradient(135deg,#5368e8,#7659df);
+ color:white;
+ font-size:13px;
+ font-weight:bold;
+ cursor:pointer;
+ box-shadow:0 6px 15px #5368e833;
+ transition:.2s;
+}
+
+.run:hover{
+ transform:translateY(-1px);
+ box-shadow:0 8px 20px #5368e844;
+}
+
+#error{
+ color:#d33c50;
+ font-size:11px;
+ margin-bottom:8px;
+}
+
+/* RIGHT SIDE */
+.results{
+ display:flex;
+ flex-direction:column;
+ gap:16px;
+}
+
+.stats{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:12px;
+}
+
+.stat{
+ padding:17px 18px;
+ background:white;
+ border:1px solid #e2e7f0;
+ border-radius:12px;
+ box-shadow:0 4px 15px #243b6b08;
+ position:relative;
+ overflow:hidden;
+}
+
+.stat:after{
+ content:"";
+ position:absolute;
+ width:65px;
+ height:65px;
+ right:-25px;
+ bottom:-30px;
+ border-radius:50%;
+ background:#6475e8;
+ opacity:.08;
+}
+
+.stat small{
+ color:#7b879b;
+ font-size:10px;
+ font-weight:bold;
+ text-transform:uppercase;
+ letter-spacing:.5px;
+}
+
+.stat strong{
+ display:block;
+ margin-top:6px;
+ font-size:23px;
+ color:#354ed0;
+}
+
+.stat.green strong{color:#15945b}
+.stat.purple strong{color:#7654d8}
+
+/* GRAPH */
+.graph-head{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+
+.graph-head span{
+ color:#65738a;
+ font-size:11px;
+}
+
+.graph{
+ padding:8px 16px 16px;
+}
+
+canvas{
+ width:100%;
+ height:390px;
+ display:block;
+}
+
+/* TABLE */
+.table-wrap{
+ overflow:auto;
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ font-size:12px;
+}
+
+th{
+ padding:11px 16px;
+ text-align:left;
+ color:#7b8799;
+ font-size:10px;
+ text-transform:uppercase;
+ letter-spacing:.5px;
+ background:#fafbfe;
+}
+
+td{
+ padding:12px 16px;
+ border-top:1px solid #edf0f4;
+}
+
+tr.best{
+ background:#edf9f2;
+}
+
+.badge{
+ margin-left:6px;
+ padding:3px 6px;
+ border-radius:10px;
+ background:#d8f4e4;
+ color:#168a55;
+ font-size:9px;
+ font-weight:bold;
+}
+
+/* TRACE */
+.trace{
+ margin:0;
+ padding:14px;
+ max-height:230px;
+ overflow:auto;
+ background:#f8f9fc;
+ border:1px solid #e8ebf1;
+ border-radius:8px;
+ font:11px/1.8 Consolas,monospace;
+ color:#536078;
+}
+
+/* FOOTER */
+.footer{
+ text-align:center;
+ margin-top:20px;
+ color:#9aa4b5;
+ font-size:10px;
+}
+
+/* RESPONSIVE */
+@media(max-width:850px){
+ .layout{grid-template-columns:1fr}
+}
+
+@media(max-width:600px){
+ .container{padding:18px 12px}
+ .header{align-items:flex-start;gap:12px}
+ .status{display:none}
+ h1{font-size:24px}
+ .stats{grid-template-columns:1fr}
+ canvas{height:330px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+ <div class="brand">
+  <div class="logo">◉</div>
+  <div>
+   <h1>Disk Scheduling Simulator</h1>
+   <p class="subtitle">
+    Visualize and compare classic disk scheduling algorithms
+   </p>
+  </div>
+ </div>
+
+ <div class="status">● Simulator Ready</div>
+</div>
+
+
+<div class="layout">
+
+<!-- CONTROL PANEL -->
+<div class="card">
+
+ <div class="card-title">
+  <h3>Simulation Controls</h3>
+  <p>Configure your disk workload</p>
+ </div>
+
+ <div class="card-body">
+
+  <div id="error"></div>
+
+  <label>Request Queue</label>
+  <input id="req"
+   value="98 183 37 122 14 124 65 67">
+
+  <label>Initial Head Position</label>
+  <input id="head" type="number" value="53">
+
+  <label>Disk Size</label>
+  <input id="size" type="number" value="200">
+
+  <label>Initial Direction</label>
+  <select id="dir">
+   <option value="up">↑ Up — Higher Cylinders</option>
+   <option value="down">↓ Down — Lower Cylinders</option>
+  </select>
+
+  <label>Algorithm</label>
+
+  <div class="algos">
+   <button class="active" data-a="FCFS">FCFS</button>
+   <button data-a="SSTF">SSTF</button>
+   <button data-a="SCAN">SCAN</button>
+   <button data-a="C-SCAN">C-SCAN</button>
+   <button data-a="LOOK">LOOK</button>
+  </div>
+
+  <label class="check">
+   <input type="checkbox" id="jump" checked>
+   Count C-SCAN return jump
+  </label>
+
+  <button class="run" onclick="run()">
+   ▶ &nbsp; Run Simulation
+  </button>
+
+ </div>
+</div>
+
+
+<!-- RESULTS -->
+<div class="results">
+
+ <!-- STATS -->
+ <div class="stats">
+
+  <div class="stat">
+   <small>Selected Algorithm</small>
+   <strong id="selected">FCFS</strong>
+  </div>
+
+  <div class="stat purple">
+   <small>Total Head Movement</small>
+   <strong id="total">0</strong>
+  </div>
+
+  <div class="stat green">
+   <small>Best Algorithm</small>
+   <strong id="best">—</strong>
+  </div>
+
+ </div>
+
+
+ <!-- GRAPH -->
+ <div class="card">
+
+  <div class="card-title graph-head">
+   <div>
+    <h3>Head Movement Graph</h3>
+    <p>Disk head position for each request</p>
+   </div>
+
+   <span id="graphTotal">0 cylinders</span>
+  </div>
+
+  <div class="graph">
+   <canvas id="graph"></canvas>
+  </div>
+
+ </div>
+
+
+ <!-- COMPARISON -->
+ <div class="card">
+
+  <div class="card-title">
+   <h3>Algorithm Comparison</h3>
+   <p>Compare total disk head movement</p>
+  </div>
+
+  <div class="table-wrap">
+   <table>
+    <thead>
+     <tr>
+      <th>Algorithm</th>
+      <th>Total Movement</th>
+      <th>Average / Request</th>
+     </tr>
+    </thead>
+    <tbody id="table"></tbody>
+   </table>
+  </div>
+
+ </div>
+
+
+ <!-- TRACE -->
+ <div class="card">
+
+  <div class="card-title">
+   <h3>Step-by-Step Trace</h3>
+   <p>Detailed movement sequence</p>
+  </div>
+
+  <div class="card-body">
+   <pre class="trace" id="trace"></pre>
+  </div>
+
+ </div>
+
+</div>
+</div>
+
+<div class="footer">
+ Disk Scheduling Simulator • Operating Systems Project
+</div>
+
+</div>
+
+
+<script>
+
+let algorithm="FCFS";
+
+const $=id=>document.getElementById(id);
+
+
+/* ALGORITHM BUTTONS */
+
+document.querySelectorAll(".algos button").forEach(btn=>{
+ btn.onclick=()=>{
+  document.querySelectorAll(".algos button")
+   .forEach(b=>b.classList.remove("active"));
+
+  btn.classList.add("active");
+  algorithm=btn.dataset.a;
+  run();
+ };
+});
+
+
+/* SPLIT REQUESTS */
+
+function split(r,h){
+ return{
+  up:r.filter(x=>x>=h).sort((a,b)=>a-b),
+  down:r.filter(x=>x<h).sort((a,b)=>b-a)
+ };
+}
+
+
+/* FCFS */
+
+function fcfs(r,h){
+ return [h,...r];
+}
+
+
+/* SSTF */
+
+function sstf(r,h){
+
+ let a=[...r],p=[h],cur=h;
+
+ while(a.length){
+
+  let i=0;
+
+  for(let j=1;j<a.length;j++)
+   if(Math.abs(a[j]-cur)<Math.abs(a[i]-cur))
+    i=j;
+
+  cur=a.splice(i,1)[0];
+  p.push(cur);
+ }
+
+ return p;
+}
+
+
+/* SCAN */
+
+function scan(r,h,s,d){
+
+ let {up,down}=split(r,h),p=[h];
+
+ if(d=="up"){
+  p.push(...up);
+  if(p.at(-1)!=s-1)p.push(s-1);
+  p.push(...down);
+ }else{
+  p.push(...down);
+  if(p.at(-1)!=0)p.push(0);
+  p.push(...up);
+ }
+
+ return p;
+}
+
+
+/* C-SCAN */
+
+function cscan(r,h,s,d){
+
+ let {up,down}=split(r,h);
+ let p=[h],j=[];
+
+ if(d=="up"){
+
+  p.push(...up);
+
+  if(p.at(-1)!=s-1)p.push(s-1);
+
+  if(down.length){
+   p.push(0);
+   j.push(p.length-1);
+   p.push(...down.reverse());
+  }
+
+ }else{
+
+  p.push(...down);
+
+  if(p.at(-1)!=0)p.push(0);
+
+  if(up.length){
+   p.push(s-1);
+   j.push(p.length-1);
+   p.push(...up.reverse());
+  }
+ }
+
+ return[p,j];
+}
+
+
+/* LOOK */
+
+function look(r,h,d){
+
+ let {up,down}=split(r,h);
+
+ return d=="up"
+  ?[h,...up,...down]
+  :[h,...down,...up];
+}
+
+
+/* SIMULATE */
+
+function simulate(name,r,h,s,d,count){
+
+ let path,jumps=[];
+
+ if(name=="FCFS")path=fcfs(r,h);
+ if(name=="SSTF")path=sstf(r,h);
+ if(name=="SCAN")path=scan(r,h,s,d);
+ if(name=="LOOK")path=look(r,h,d);
+
+ if(name=="C-SCAN")
+  [path,jumps]=cscan(r,h,s,d);
+
+ let total=0,steps=[];
+
+ for(let i=1;i<path.length;i++){
+
+  let dist=Math.abs(path[i]-path[i-1]);
+  let jump=jumps.includes(i);
+
+  if(!jump||count)total+=dist;
+
+  steps.push(
+   `${String(i).padStart(2,"0")}. `+
+   `${path[i-1]} → ${path[i]} = ${dist}`+
+   (jump?"  (return jump)":"")
+  );
+ }
+
+ return{
+  name,path,jumps,total,
+  avg:total/r.length,
+  steps
+ };
+}
+
+
+/* GRAPH */
+
+function draw(res,size){
+
+ let c=$("graph");
+ let ctx=c.getContext("2d");
+ let dpr=devicePixelRatio||1;
+
+ c.width=c.clientWidth*dpr;
+ c.height=c.clientHeight*dpr;
+
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+
+ let w=c.clientWidth,h=c.clientHeight;
+
+ ctx.clearRect(0,0,w,h);
+
+ let L=45,R=25,T=25,B=30;
+
+ let X=x=>L+x/(size-1)*(w-L-R);
+
+ let Y=i=>T+i/(res.path.length-1||1)*(h-T-B);
+
+
+ /* GRID */
+
+ ctx.font="10px Arial";
+ ctx.fillStyle="#8a94a6";
+ ctx.strokeStyle="#e8ecf3";
+ ctx.lineWidth=1;
+
+ for(let i=0;i<=5;i++){
+
+  let value=Math.round(i*(size-1)/5);
+  let x=X(value);
+
+  ctx.beginPath();
+  ctx.moveTo(x,T);
+  ctx.lineTo(x,h-B);
+  ctx.stroke();
+
+  ctx.fillText(value,x-7,h-9);
+ }
+
+
+ /* PATH */
+
+ for(let i=1;i<res.path.length;i++){
+
+  ctx.beginPath();
+
+  ctx.setLineDash(
+   res.jumps.includes(i)?[6,5]:[]
+  );
+
+  ctx.strokeStyle=
+   res.jumps.includes(i)?"#9aa1ad":"#6276e8";
+
+  ctx.lineWidth=2.5;
+
+  ctx.moveTo(X(res.path[i-1]),Y(i-1));
+  ctx.lineTo(X(res.path[i]),Y(i));
+
+  ctx.stroke();
+ }
+
+ ctx.setLineDash([]);
+
+
+ /* POINTS */
+
+ res.path.forEach((p,i)=>{
+
+  let x=X(p),y=Y(i);
+
+  ctx.beginPath();
+  ctx.arc(x,y,i?4:6,0,Math.PI*2);
+
+  ctx.fillStyle=i?"#ee5b70":"#20a464";
+  ctx.fill();
+
+  ctx.font=i?"10px Arial":"bold 10px Arial";
+  ctx.fillStyle="#344054";
+
+  ctx.fillText(
+   i?String(p):p+" START",
+   x+7,
+   y+4
+  );
+ });
+
+}
+
+
+/* RUN */
+
+function run(){
+
+ let error=$("error");
+ error.textContent="";
+
+ let r=$("req").value
+  .replace(/,/g," ")
+  .trim()
+  .split(/\s+/)
+  .map(Number);
+
+ let h=+$("head").value;
+ let s=+$("size").value;
+ let d=$("dir").value;
+ let count=$("jump").checked;
+
+ if(!r.length||r.some(isNaN))
+  return error.textContent="Please enter valid requests.";
+
+ if(s<2||h<0||h>=s)
+  return error.textContent=
+   `Head must be between 0 and ${s-1}.`;
+
+ if(r.some(x=>x<0||x>=s))
+  return error.textContent=
+   `Requests must be between 0 and ${s-1}.`;
+
+
+ let names=["FCFS","SSTF","SCAN","C-SCAN","LOOK"];
+
+ let results=names.map(x=>
+  simulate(x,r,h,s,d,count)
+ );
+
+ let best=results.reduce((a,b)=>
+  b.total<a.total?b:a
+ );
+
+ let selected=results.find(x=>x.name==algorithm);
+
+
+ /* STATS */
+
+ $("selected").textContent=selected.name;
+
+ $("total").textContent=
+  selected.total+" cylinders";
+
+ $("best").textContent=best.name;
+
+ $("graphTotal").textContent=
+  selected.total+" cylinders";
+
+
+ /* TABLE */
+
+ $("table").innerHTML=results.map(x=>`
+
+  <tr class="${x.name==best.name?"best":""}">
+
+   <td>
+    <b>${x.name}</b>
+    ${x.name==best.name?
+     '<span class="badge">BEST</span>':""}
+   </td>
+
+   <td>${x.total} cylinders</td>
+
+   <td>${x.avg.toFixed(2)}</td>
+
+  </tr>
+
+ `).join("");
+
+
+ /* TRACE */
+
+ $("trace").textContent=
+  selected.steps.join("\n")+
+  `\n\n────────────────────────────`+
+  `\nTotal Movement : ${selected.total} cylinders`+
+  `\nAverage        : ${selected.avg.toFixed(2)} cylinders`;
+
+
+ draw(selected,s);
+}
+
+
+/* INITIALIZE */
+
+window.addEventListener("resize",run);
+
+run();
+
+</script>
+
+</body>
+</html>
